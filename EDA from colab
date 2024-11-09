@@ -1,0 +1,171 @@
+import pandas as pd
+
+df = pd.read_csv('http://www.ishelp.info/data/insurance.csv')
+
+df.head()
+
+df.describe()
+
+df.shape
+
+df.age.count()
+
+print(f'age: {df.age.nunique()}')
+print(f'sex: {df.sex.nunique()}')
+print(f'bmi: {df.bmi.nunique()}')
+print(f'children: {df.children.nunique()}')
+print(f'smoker: {df.smoker.nunique()}')
+print(f'region: {df.region.nunique()}')
+print(f'charges: {df.charges.nunique()}')
+
+print(f'age: {df.age.dtype}')
+print(f'sex: {df.sex.dtype}')
+print(f'bmi: {df.bmi.dtype}')
+print(f'children: {df.children.dtype}')
+print(f'smoker: {df.smoker.dtype}')
+print(f'region: {df.region.dtype}')
+print(f'charges: {df.charges.dtype}')
+
+print(f'age: {pd.api.types.is_numeric_dtype(df.age)}')
+print(f'sex: {pd.api.types.is_numeric_dtype(df.sex)}')
+print(f'bmi: {pd.api.types.is_numeric_dtype(df.bmi)}')
+print(f'children: {pd.api.types.is_numeric_dtype(df.children)}')
+print(f'smoker: {pd.api.types.is_numeric_dtype(df.smoker)}')
+print(f'region: {pd.api.types.is_numeric_dtype(df.region)}')
+print(f'charges: {pd.api.types.is_numeric_dtype(df.charges)}')
+
+print(f'age: {df.age.isnull().sum()}')
+print(f'sex: {df.sex.isnull().sum()}')
+print(f'bmi: {df.bmi.isnull().sum()}')
+print(f'children: {df.children.isnull().sum()}')
+print(f'smoker: {df.smoker.isnull().sum()}')
+print(f'region: {df.region.isnull().sum()}')
+print(f'charges: {df.charges.isnull().sum()}')
+
+import numpy as np
+
+print(df.charges.min())
+print(df.charges.max())
+print(df.charges.quantile(0.25))
+print(df.charges.quantile(0.50))
+print(df.charges.quantile(0.75))
+print(df.charges.mean())
+print(df.charges.median())
+print(df.charges.mode())
+print(df.charges.mode().values[0])
+
+df.charges.std()
+
+np.std(df.charges)
+
+np.std(df.charges, ddof=1)
+
+from scipy.stats import kurtosis, skew
+print(skew(df.charges, bias=False))
+print(kurtosis(df.charges, bias=False))
+
+print(df.charges.skew())
+
+print(df.charges.kurtosis())
+
+Bivariate Analysis
+
+
+np.corrcoef(df['age'], df['charges'])[0][1]
+
+np.corrcoef(df['bmi'], df['charges'])[0][1]
+
+np.corrcoef(df['children'], df['charges'])[0][1]
+
+print(df.charges.corr(df.age))
+print(df.charges.corr(df.bmi))
+print(df.charges.corr(df.children))
+
+from scipy import stats
+
+corr = stats.pearsonr(df.charges, df.age)
+print(corr)
+
+r, p = stats.pearsonr(df.charges, df.bmi)
+print(r)
+print(p)
+
+r, p = stats.pearsonr(df.charges, df.children)
+print(f'r:{r}, p:{p}')
+
+corr_df = pd.DataFrame(columns=['r', 'p'])
+for col in df:
+  if pd.api.types.is_numeric_dtype(df[col]) and col != 'charges':
+    r, p =stats.pearsonr(df.charges, df[col])
+    corr_df.loc[col] = [round(r,3), round(p,3)]
+corr_df
+
+import matplotlib.pyplot as plt
+plt.scatter(df.age, df.charges)
+plt.title('Age vs Charges')
+plt.xlabel('Age')
+plt.ylabel('Charges')
+plt.show()
+
+
+
+df_smoker = df[df['smoker'] == 'yes']
+df_nonsmoker = df[df['smoker'] == 'no']
+plt.scatter(df_smoker.age, df_smoker.charges)
+plt.title('Age vs Charges for smokers')
+plt.xlabel('Age')
+plt.ylabel('Charges')
+plt.show()
+
+
+plt.scatter(df_nonsmoker.age, df_nonsmoker.charges)
+plt.title('Age vs Charges for Nonsmokers')
+plt.xlabel('Age')
+plt.ylabel('Charges')
+plt.show()
+
+
+m, b, r, p, err = stats.linregress(df.age, df.charges)
+x = range(df.age.min(), df.age.max()+1)
+y = m*x + b
+plt.plot(x, y, color = 'black')
+plt.scatter(df_smoker.age, df_smoker.charges, label='Smokers')
+plt.scatter(df_nonsmoker.age, df_nonsmoker.charges, label='Non_smokers')
+plt.title('Age vs Charges Groupby')
+plt.xlabel('Age')
+plt.ylabel('Charges')
+plt.legend()
+plt.show()
+
+
+from statsmodels.stats.diagnostic import het_breuschpagan
+from statsmodels.stats.diagnostic import het_white
+from statsmodels.formula.api import ols
+
+model = ols(formula='charges ~ age', data=df).fit()
+
+white_test = het_white(model.resid, model.model.exog)
+
+breuc_test = het_breuschpagan(model.resid, model.model.exog)
+
+output_df = pd.DataFrame(columns=['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value'])
+
+output_df.loc['White'] = white_test
+output_df.loc['Breusch-Pagan'] = breuc_test
+
+output_df
+
+import seaborn as sns
+
+sns.set_style('white')
+sns.jointplot(x='age', y='charges', data=df, kind='hex')
+plt.show()
+
+sns.jointplot(x='age', y='charges', data=df, kind='kde')
+
+sns.pairplot(df)
+plt.show()
+
+import plotly.express as px
+fig = px.scatter_3d(df, x='age', y='charges', z='bmi', color='smoker', symbol='sex', size='children')
+fig.show()
